@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.10
+          python-version: 3.9
 
       # Step 3: Cache dependencies
       - name: Cache Virtual Environment
@@ -42,17 +42,19 @@ jobs:
           source .venv/bin/activate
           python -m unittest discover -s tests -p "*.py"
 
-      # Step 6: Zip all files for deployment
-      - name: Zip all files
-        run: zip -r zan-ecommerce.zip ./*
-
-      # Step 7: Upload artifact
-      - name: Upload artifact
+      - name: Create archive of dependencies
+        run: |
+          cd ./venv/lib/python3.9/site-packages
+          zip -r9 ../../../../api.zip .
+      - name: Add API files to Zip file
+        run: cd ./api && zip -g ../api.zip -r .
+      - name: Upload zip file artifact
         uses: actions/upload-artifact@v3
         with:
-          name: zan-ecommerce
-          path: zan-ecommerce.zip
+          name: api
+          path: api.zip
 
+  
   CD:
     runs-on: ubuntu-latest
     needs: CI
@@ -61,7 +63,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: zan-ecommerce
+          name: api
 
       # Step 2: Configure AWS Credentials
       - name: Configure AWS Credentials
@@ -73,7 +75,7 @@ jobs:
 
       # Step 3: Upload to S3
       - name: Upload to S3
-        run: aws s3 cp zan-ecommerce.zip s3://new-ecom-bucket/zan-ecommerce.zip
+        run: aws s3 cp api.zip s3://new-ecom-bucket/api.zip
 
       # Step 4: Update Lambda Function
       - name: Deploy to Lambda
@@ -81,4 +83,4 @@ jobs:
           aws lambda update-function-code \
           --function-name new-ecom-lamb \
           --s3-bucket new-ecom-bucket \
-          --s3-key zan-ecommerce.zip
+          --s3-key api.zip
