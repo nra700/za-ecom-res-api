@@ -42,12 +42,18 @@ jobs:
           source .venv/bin/activate
           python -m unittest discover -s tests -p "*.py"
 
+      # Step 6: Create archive of dependencies
       - name: Create archive of dependencies
         run: |
-          cd ./venv/lib/python3.9/site-packages
-          zip -r9 ../../../../api.zip .
+          source .venv/bin/activate
+          zip -r api.zip .venv/lib/$(python -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")/site-packages
+
+      # Step 7: Add API files to zip archive
       - name: Add API files to Zip file
-        run: cd ./api && zip -g ../api.zip -r .
+        run: |
+          zip -g api.zip -r .
+
+      # Step 8: Upload zip file artifact
       - name: Upload zip file artifact
         uses: actions/upload-artifact@v3
         with:
